@@ -1,0 +1,34 @@
+{
+  "name": "media-library-api",
+  "version": "1.0.0",
+  "description": "Production-grade Media Library API with file uploads, search, pagination and filtering",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts"
+  },
+  "keywords": [
+    "media",
+    "library",
+    "api",
+    "express",
+    "file-upload"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mongoose": "^9.6.3",
+    "multer": "^2.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
