@@ -3,10 +3,26 @@
 // This file is the only place that calls app.listen() and connectDB().
 
 import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
 import http from 'http';
 import mongoose from 'mongoose';
 import app from './app';
 import connectDB from './config/db';
+
+// What: Startup check that a .env file exists in the project root.
+// Does: Warns loudly when .env is missing so a developer immediately knows why
+//       configuration-dependent startup steps (e.g. the MongoDB connection) fail.
+// Why a warning, not an exit: in deployed environments (Docker, CI, cloud) the
+// variables come from the platform and no .env file exists — connectDB() still
+// fails fast if required variables are truly absent.
+const envPath = path.join(process.cwd(), '.env');
+if (!fs.existsSync(envPath)) {
+    console.warn(
+        `No .env file found at ${envPath}. ` +
+        'Relying on process environment variables; copy .env.example to .env for local development.'
+    );
+}
 
 const PORT = process.env.PORT || 3000;
 
@@ -73,7 +89,7 @@ const startServer = async (): Promise<void> => {
         await connectDB();
 
         server = app.listen(PORT, () => {
-            console.log(`\n✅  Media Library API running on http://localhost:${PORT}`);
+            console.log(`\n Media Library API running on http://localhost:${PORT}`);
             console.log(`   Health check  →  GET  /`);
             console.log(`   Upload media  →  POST /media`);
             console.log(`   List media    →  GET  /media`);

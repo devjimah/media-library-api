@@ -8,8 +8,17 @@ import path from 'path';
 import { Request } from 'express';
 import { AppError } from '../utils/AppError';
 
-/** Accepted MIME types — any other type is rejected with a 400 error */
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+/**
+ * Accepted MIME types and the file extensions each may carry.
+ * The declared Content-Type of a multipart part is client-controlled, so the
+ * extension must be checked too — otherwise "evil.html" declared as image/png
+ * passes the filter and express.static later serves it as text/html (stored XSS).
+ */
+const ALLOWED_TYPES: Record<string, string[]> = {
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'application/pdf': ['.pdf']
+};
 
 /** Maximum file size in bytes (5 MB) */
 const MAX_FILE_SIZE = (Number(process.env.MAX_FILE_SIZE_MB) || 5) * 1024 * 1024;
@@ -52,8 +61,9 @@ const storage = multer.diskStorage({
 // ---------------------------------------------------------------------------
 
 // What: Multer fileFilter enforcing the lab's accepted-type whitelist.
-// Does: Accepts image/jpeg, image/png, and application/pdf; rejects anything else with
-//       a 400 AppError before the file is written to disk.
+// Does: Accepts image/jpeg, image/png, and application/pdf — and only when the file
+//       extension matches the declared type — rejecting anything else with a 400
+//       AppError before the file is written to disk.
 // If removed: Any file type (executables, scripts, videos) gets stored — a security
 //             risk and a direct violation of the lab's upload restrictions.
 const fileFilter = (
@@ -61,10 +71,9 @@ const fileFilter = (
     file: Express.Multer.File,
     cb: FileFilterCallback
 ): void => {
-    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        // Accept the file
-        cb(null, true);
-    } else {
+    const allowedExtensions = ALLOWED_TYPES[file.mimetype];
+
+    if (!allowedExtensions) {
         // Reject unsupported types — the error is caught by the global error handler
         cb(
             new AppError(
@@ -72,7 +81,25 @@ const fileFilter = (
                 400
             )
         );
+        return;
     }
+
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (!allowedExtensions.includes(ext)) {
+        // Extension/type mismatch — the stored extension drives the Content-Type that
+        // express.static serves later, so it must agree with the declared MIME type.
+        cb(
+            new AppError(
+                `File extension "${ext || '(none)'}" does not match type "${file.mimetype}". ` +
+                `Expected: ${allowedExtensions.join(', ')}.`,
+                400
+            )
+        );
+        return;
+    }
+
+    cb(null, true);
 };
 
 // ---------------------------------------------------------------------------
