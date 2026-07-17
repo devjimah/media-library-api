@@ -3,6 +3,7 @@
 // in tests without binding to a port.
 
 import express from 'express';
+import path from 'node:path';
 import logger from './middlewares/logger';
 import errorHandler from './middlewares/errorHandler';
 import notFound from './middlewares/notFound';
@@ -26,6 +27,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Logs every request's method, path, status, and duration; safe to remove
 app.use(logger);
+
+// Serve the intentionally minimal browser upload page without changing the
+// existing JSON health-check response at GET /.
+app.use('/upload', express.static(path.join(process.cwd(), 'public')));
 
 // ---------------------------------------------------------------------------
 // Health-check endpoint
@@ -57,7 +62,13 @@ app.use('/media', mediaRoutes);
 
 // GET /uploads/<filename> streams the uploaded file from disk; without this route
 // the filePath returned by the API points at files clients cannot retrieve.
-app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
+// nosniff stops browsers second-guessing the extension-derived Content-Type,
+// so a disguised file can never be promoted to something executable like HTML.
+app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads', {
+    setHeaders: (res) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+    }
+}));
 
 // ---------------------------------------------------------------------------
 // 404 — must come after all valid routes

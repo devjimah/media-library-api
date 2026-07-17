@@ -12,9 +12,9 @@ case.
 - **Layered architecture** — routes → controllers → services → repositories, with
   strict separation of concerns (no business logic in routes or controllers, no DB
   calls outside the repository layer)
-- **File uploads** — single-file upload via Multer disk storage with MIME-type
-  whitelisting (JPEG, PNG, PDF) and a 5 MB size limit enforced *before* the request
-  reaches any controller
+- **File uploads** — single-file upload via Multer disk storage with a MIME-type
+  **and matching-extension** whitelist (JPEG, PNG, PDF) and a 5 MB size limit, all
+  enforced *before* the request reaches any controller
 - **Request validation** — reusable Zod middleware producing structured, field-level
   error details for bodies and query strings
 - **Pagination, filtering & search** — page/limit with sane defaults and caps,
@@ -29,7 +29,13 @@ case.
 - **No orphaned files** — uploads whose requests later fail (validation or DB errors)
   are automatically deleted from disk; deleting a record also removes its file
 - **Static file serving** — every stored `filePath` is directly downloadable via
-  `GET /uploads/<filename>`
+  `GET /uploads/<filename>`, served with `X-Content-Type-Options: nosniff`
+- **Upload hardening** — the declared `Content-Type` of an upload is client-controlled,
+  so the file extension must also match the declared type; combined with `nosniff`
+  this prevents a disguised HTML file from ever being stored or rendered on the API
+  origin (stored XSS)
+- **Browser upload page** — a minimal static page at `GET /upload` for uploading
+  files without a REST client
 
 ## Tech Stack
 
@@ -76,6 +82,10 @@ media-library-api/
 │       ├── AppError.ts            # Operational error class with HTTP status code
 │       ├── catchAsync.ts          # Async handler wrapper → next(err)
 │       └── removeUploadedFile.ts  # Best-effort cleanup for failed uploads
+├── public/                        # Static browser upload page (served at /upload)
+├── docs/
+│   ├── reviews/                   # Dated lab review reports
+│   └── superpowers/               # BEM-34 design spec + implementation plan
 ├── uploads/                       # Uploaded files (gitignored, .gitkeep tracked)
 ├── .env.example                   # Environment variable template
 └── REVIEW-FINDINGS.md             # Code-review history for this project
@@ -138,6 +148,7 @@ Base URL: `http://localhost:<PORT>`
 | `PUT` | `/media/:id` | Update media metadata (file replacement not supported) |
 | `DELETE` | `/media/:id` | Delete a media record and its file from disk |
 | `GET` | `/uploads/:filename` | Download a stored file |
+| `GET` | `/upload` | Minimal browser upload page |
 | `GET` | `/` | Health check |
 
 ### Response Envelope
@@ -161,7 +172,7 @@ for all other errors.
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `file` | ✅ | The file itself — `image/jpeg`, `image/png`, or `application/pdf`, max 5 MB |
+| `file` | ✅ | The file itself — `image/jpeg` (`.jpg`/`.jpeg`), `image/png` (`.png`), or `application/pdf` (`.pdf`), max 5 MB; the extension must match the declared type |
 | `title` | ✅ | 1–200 characters |
 | `category` | ✅ | One of `image`, `document`, `other` |
 | `tags` | — | Comma-separated string (`"a, b"`) or repeated array values; defaults to `[]` |
@@ -196,9 +207,11 @@ curl -X POST http://localhost:3000/media \
 }
 ```
 
-Failure cases (all `400`): unsupported file type, file over the size limit, missing
-`file` field, or invalid metadata (returned with field-level `details`). Files already
-written to disk for a failed request are deleted automatically.
+Failure cases (all `400`): unsupported file type, file extension not matching the
+declared type (e.g. `evil.html` sent as `image/png`), file over the size limit,
+missing `file` field, or invalid metadata (returned with field-level `details`).
+Files already written to disk for a failed request are deleted automatically —
+type/extension rejections happen before the file is ever written.
 
 ### GET /media — list with pagination, filtering & search
 
@@ -287,6 +300,7 @@ Edge cases worth exercising in Postman/Insomnia (all verified against this codeb
 
 - ✅ Valid upload → `201` with full metadata
 - ✅ Unsupported file type (e.g. `.txt`) → `400` with accepted-types message
+- ✅ Spoofed upload (`.html` declared as `image/png`) → `400` extension-mismatch, nothing written to disk
 - ✅ Oversized file (> 5 MB) → `400` with size-limit message
 - ✅ Missing/invalid metadata → `400` with field-level `details`, uploaded file cleaned up
 - ✅ `GET /media` with filters, search, and sorting → paginated `200`
@@ -295,6 +309,11 @@ Edge cases worth exercising in Postman/Insomnia (all verified against this codeb
 - ✅ Empty-body `PUT` → `400`
 - ✅ Malformed ObjectId → `400`; unknown id → `404`
 - ✅ `DELETE` removes both the record and the file on disk
+
+## Review History
+
+- [REVIEW-FINDINGS.md](REVIEW-FINDINGS.md) — 2026-07-06 full lab review (3 bugs + 4 findings, all fixed and verified 2026-07-07)
+- [docs/reviews/2026-07-17-lab-review-report.md](docs/reviews/2026-07-17-lab-review-report.md) — 2026-07-17 follow-up bug sweep (1 security fix + minor findings)
 
 ## License
 
