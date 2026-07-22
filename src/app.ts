@@ -50,6 +50,22 @@ app.get('/', (_req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Dedicated health-check endpoint
+// ---------------------------------------------------------------------------
+
+// What: Liveness endpoint for uptime monitors and the Vercel deployment.
+// Does: Responds 200 with a fixed shape { status, uptime, timestamp } without touching
+//       the database, so monitors can confirm the process is alive cheaply.
+// If removed: Monitoring pointed at GET /health starts failing with 404.
+app.get('/health', (_req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ---------------------------------------------------------------------------
 // API routes
 // ---------------------------------------------------------------------------
 
