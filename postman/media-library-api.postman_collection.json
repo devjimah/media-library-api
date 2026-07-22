@@ -1,0 +1,144 @@
+{
+  "info": {
+    "name": "Media Library API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "All Media Library API endpoints with status, structure, and field assertions."
+  },
+  "item": [
+    {
+      "name": "POST /media (create)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 201', () => pm.response.to.have.status(201));",
+              "const b = pm.response.json();",
+              "pm.test('envelope is success', () => pm.expect(b.status).to.eql('success'));",
+              "pm.test('has media with _id', () => pm.expect(b.data.media).to.have.property('_id'));",
+              "if (b.data && b.data.media && b.data.media._id) {",
+              "  pm.environment.set('MEDIA_ID', b.data.media._id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "{{BASE_URL}}/media", "host": ["{{BASE_URL}}"], "path": ["media"] },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "title", "value": "Sample Photo", "type": "text" },
+            { "key": "category", "value": "image", "type": "text" },
+            { "key": "tags", "value": "sample,demo", "type": "text" },
+            { "key": "file", "type": "file", "src": [] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /media (list)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('envelope is success', () => pm.expect(b.status).to.eql('success'));",
+              "pm.test('has pagination metadata', () => {",
+              "  pm.expect(b.data.pagination).to.have.property('total');",
+              "  pm.expect(b.data.pagination).to.have.property('totalPages');",
+              "});",
+              "pm.test('results is an array', () => pm.expect(b.data.results).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/media?page=1&limit=10",
+          "host": ["{{BASE_URL}}"],
+          "path": ["media"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /media/:id (get one)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('returns the requested record', () => {",
+              "  pm.expect(b.status).to.eql('success');",
+              "  pm.expect(b.data.media._id).to.eql(pm.environment.get('MEDIA_ID'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{BASE_URL}}/media/{{MEDIA_ID}}", "host": ["{{BASE_URL}}"], "path": ["media", "{{MEDIA_ID}}"] }
+      }
+    },
+    {
+      "name": "PUT /media/:id (update)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('title updated', () => pm.expect(b.data.media.title).to.eql('Updated Title'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{BASE_URL}}/media/{{MEDIA_ID}}", "host": ["{{BASE_URL}}"], "path": ["media", "{{MEDIA_ID}}"] },
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Title\"\n}" }
+      }
+    },
+    {
+      "name": "DELETE /media/:id (delete)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('envelope is success', () => pm.expect(b.status).to.eql('success'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{BASE_URL}}/media/{{MEDIA_ID}}", "host": ["{{BASE_URL}}"], "path": ["media", "{{MEDIA_ID}}"] }
+      }
+    }
+  ]
+}
