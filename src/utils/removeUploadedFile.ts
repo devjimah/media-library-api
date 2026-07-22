@@ -3,6 +3,7 @@
 // Prevents /uploads from accumulating orphaned files with no database record.
 
 import fs from 'fs/promises';
+import logger from '../config/logger';
 
 // What: Fire-and-forget deleter for an uploaded file attached to a failed request.
 // Does: Unlinks file.path if a file is present; logs (never throws) when deletion fails,
@@ -13,7 +14,7 @@ const removeUploadedFile = (file?: Express.Multer.File): void => {
     if (!file?.path) return;
 
     fs.unlink(file.path).catch((err: Error) => {
-        console.warn(`Could not clean up uploaded file at ${file.path}: ${err.message}`);
+        logger.warn(`Could not clean up uploaded file at ${file.path}: ${err.message}`);
     });
 };
 

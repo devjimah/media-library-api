@@ -13,6 +13,7 @@ import http from 'http';
 import mongoose from 'mongoose';
 import app from './app';
 import connectDB from './config/db';
+import logger from './config/logger';
 
 // What: Startup check that a .env file exists in the project root.
 // Does: Warns loudly when .env is missing so a developer immediately knows why
@@ -22,7 +23,7 @@ import connectDB from './config/db';
 // fails fast if required variables are truly absent.
 const envPath = path.join(process.cwd(), '.env');
 if (!fs.existsSync(envPath)) {
-    console.warn(
+    logger.warn(
         `No .env file found at ${envPath}. ` +
         'Relying on process environment variables; copy .env.example to .env for local development.'
     );
@@ -64,7 +65,7 @@ const shutdownWithFailure = (): void => {
 //             and no chance for open requests to finish (lab requires handling this).
 process.on('unhandledRejection', (reason: unknown) => {
     const message = reason instanceof Error ? reason.message : String(reason);
-    console.error(`[UNHANDLED REJECTION] ${message}`);
+    logger.error(`Unhandled promise rejection: ${message}`);
     shutdownWithFailure();
 });
 
@@ -74,8 +75,8 @@ process.on('unhandledRejection', (reason: unknown) => {
 // If removed: The process dies with Node's default crash output and nothing is
 //             logged in the application's format (lab requires handling this).
 process.on('uncaughtException', (err: Error) => {
-    console.error(`[UNCAUGHT EXCEPTION] ${err.message}`);
-    if (err.stack) console.error(err.stack);
+    logger.error(`Uncaught exception: ${err.message}`);
+    if (err.stack) logger.error(err.stack);
     process.exit(1);
 });
 
@@ -93,13 +94,7 @@ const startServer = async (): Promise<void> => {
         await connectDB();
 
         server = app.listen(PORT, () => {
-            console.log(`\n Media Library API running on http://localhost:${PORT}`);
-            console.log(`   Health check  →  GET  /`);
-            console.log(`   Upload media  →  POST /media`);
-            console.log(`   List media    →  GET  /media`);
-            console.log(`   Get media     →  GET  /media/:id`);
-            console.log(`   Update media  →  PUT  /media/:id`);
-            console.log(`   Delete media  →  DELETE /media/:id\n`);
+            logger.info(`Media Library API running on http://localhost:${PORT}`);
         });
 
         // -----------------------------------------------------------------------
@@ -114,17 +109,17 @@ const startServer = async (): Promise<void> => {
         // If removed: Ctrl+C / container stop kills the process mid-request and can
         //             leave MongoDB connections dangling.
         const gracefulShutdown = (signal: string): void => {
-            console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+            logger.info(`Received ${signal}. Shutting down gracefully...`);
 
             server?.close(async () => {
                 try {
                     await mongoose.connection.close();
-                    console.log('MongoDB connection closed.');
+                    logger.info('MongoDB connection closed.');
                 } catch (closeErr) {
                     const message = closeErr instanceof Error ? closeErr.message : 'Unknown error';
-                    console.error('Error closing MongoDB connection:', message);
+                    logger.error(`Error closing MongoDB connection: ${message}`);
                 }
-                console.log('Server closed. Exiting.');
+                logger.info('Server closed. Exiting.');
                 process.exit(0);
             });
         };
@@ -136,7 +131,7 @@ const startServer = async (): Promise<void> => {
         process.on('SIGINT', () => gracefulShutdown('SIGINT'));
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown startup error';
-        console.error('Failed to start server:', message);
+        logger.error(`Failed to start server: ${message}`);
         process.exit(1);
     }
 };

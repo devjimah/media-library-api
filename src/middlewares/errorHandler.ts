@@ -7,6 +7,7 @@ import { Error as MongooseError } from 'mongoose';
 import multer from 'multer';
 import { AppErrorInterface } from '../types/errors';
 import removeUploadedFile from '../utils/removeUploadedFile';
+import logger from '../config/logger';
 
 // Extend AppErrorInterface to accommodate MongoDB and Multer error codes
 interface ExtendedError extends AppErrorInterface {
@@ -90,10 +91,13 @@ const errorHandler = (
         message = 'Internal Server Error';
     }
 
-    // Log error details for observability (always); stack only in development
-    console.error(`[ERROR ${statusCode}] ${err.message}`);
-    if (!isProduction && err.stack) {
-        console.error(err.stack);
+    // Log error details for observability. 4xx are expected/operational (warn);
+    // 5xx are real failures (error). Stack only in development.
+    if (statusCode >= 500) {
+        logger.error(`[${statusCode}] ${err.message}`);
+        if (!isProduction && err.stack) logger.error(err.stack);
+    } else {
+        logger.warn(`[${statusCode}] ${err.message}`);
     }
 
     // Guard against writing headers twice (e.g. after a streaming response)

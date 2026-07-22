@@ -2,6 +2,7 @@
 // Removing this file or its export prevents the server from establishing a DB connection.
 
 import mongoose from 'mongoose';
+import logger from './logger';
 
 // What: The application's single MongoDB connection routine.
 // Does: Resolves the connection string (Atlas preferred, local fallback), fails fast when
@@ -23,7 +24,7 @@ const connectDB = async (): Promise<void> => {
         serverSelectionTimeoutMS: 5000
     });
 
-    console.log(`MongoDB connected: ${mongoose.connection.name}`);
+    logger.info(`MongoDB connected: ${mongoose.connection.name}`);
 };
 
 export default connectDB;
