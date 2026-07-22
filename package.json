@@ -2,10 +2,10 @@
   "name": "media-library-api",
   "version": "1.0.0",
   "description": "Production-grade Media Library API with file uploads, search, pagination and filtering",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "jest --runInBand --forceExit",
     "test:coverage": "jest --coverage --runInBand --forceExit",
