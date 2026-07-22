@@ -2,7 +2,11 @@
 // starts the HTTP server, and registers process-level error handlers.
 // This file is the only place that calls app.listen() and connectDB().
 
-import 'dotenv/config';
+import loadEnv from './config/env';
+
+// Load and validate environment before anything else reads process.env.
+loadEnv();
+
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'http';

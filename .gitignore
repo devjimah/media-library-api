@@ -1,5 +1,11 @@
 node_modules/
 dist/
+coverage/
+
+# Environment files — never commit real secrets. Only the example is tracked.
 .env
+.env.*
+!.env.example
+
 uploads/*
 !uploads/.gitkeep
