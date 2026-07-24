@@ -139,8 +139,6 @@ export const deleteMediaRecord = async (id: string): Promise<void> => {
         // File may have been manually deleted; log and continue
         logger.warn(`Could not delete file at ${absolutePath}: ${(err as Error).message}`);
     }
-
-    //run a CRON job to 
 };
 
 // ---------------------------------------------------------------------------

@@ -102,6 +102,47 @@ describe('GET /media', () => {
         expect(res.body.data.results).toHaveLength(1);
         expect(res.body.data.results[0].title).toBe('Sunset over water');
     });
+
+    it('filters by tags (?tags= matches any listed tag)', async () => {
+        await uploadMedia({ title: 'Tagged', tags: 'alpha,beta' });
+        await uploadMedia({ title: 'Other', tags: 'gamma' });
+        const res = await request(app).get('/media?tags=beta');
+        expect(res.status).toBe(200);
+        expect(res.body.data.results).toHaveLength(1);
+        expect(res.body.data.results[0].title).toBe('Tagged');
+    });
+
+    it('paginates across pages with correct metadata', async () => {
+        // Seed 3 records, page through them 2 at a time.
+        await uploadMedia({ title: 'One' });
+        await uploadMedia({ title: 'Two' });
+        await uploadMedia({ title: 'Three' });
+
+        const page1 = await request(app).get('/media?page=1&limit=2');
+        expect(page1.status).toBe(200);
+        expect(page1.body.data.results).toHaveLength(2);
+        expect(page1.body.data.pagination).toMatchObject({
+            total: 3,
+            page: 1,
+            limit: 2,
+            totalPages: 2
+        });
+
+        const page2 = await request(app).get('/media?page=2&limit=2');
+        expect(page2.status).toBe(200);
+        expect(page2.body.data.results).toHaveLength(1);
+        expect(page2.body.data.pagination.page).toBe(2);
+    });
+
+    it('sorts by title ascending when requested', async () => {
+        await uploadMedia({ title: 'Banana' });
+        await uploadMedia({ title: 'Apple' });
+        await uploadMedia({ title: 'Cherry' });
+        const res = await request(app).get('/media?sortBy=title&order=asc');
+        expect(res.status).toBe(200);
+        const titles = res.body.data.results.map((r: { title: string }) => r.title);
+        expect(titles).toEqual(['Apple', 'Banana', 'Cherry']);
+    });
 });
 
 describe('GET /media/:id', () => {

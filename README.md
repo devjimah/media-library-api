@@ -131,7 +131,7 @@ with a clear message otherwise.
 ```bash
 npm run dev     # development — tsx watch mode with auto-restart
 npm run build   # compile TypeScript to dist/
-npm start       # run the compiled build (node dist/server.js)
+npm start       # run the compiled build (node dist/src/server.js)
 ```
 
 On success you'll see the endpoint summary and `MongoDB connected: <db name>`.
