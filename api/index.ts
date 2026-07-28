@@ -13,11 +13,22 @@ loadEnv();
 // Cache the connection promise across warm invocations so we connect at most once.
 let dbReady: Promise<void> | null = null;
 
+// Liveness routes that must answer even when the database is down. The lab's
+// /health check exists precisely to report "the process is alive" cheaply, so it
+// (and the service-info root) must never be gated behind the DB connection.
+const DB_FREE_PATHS = new Set(['/health', '/']);
+
 // What: Serverless request handler exported to the Vercel Node runtime.
-// Does: Ensures a single lazy MongoDB connection is established, then delegates the
-//       request to the Express app.
+// Does: For liveness paths, delegates straight to the app; for everything else,
+//       ensures a single lazy MongoDB connection is established first, then delegates.
 // If removed: Vercel has no entry to invoke and the deployment serves nothing.
 export default async function handler(req: Request, res: Response): Promise<void> {
+    // Health/root never depend on the database — answer them without connecting.
+    if (DB_FREE_PATHS.has(req.url ?? '')) {
+        app(req, res);
+        return;
+    }
+
     try {
         if (!dbReady) dbReady = connectDB();
         await dbReady;
