@@ -26,7 +26,8 @@ vercel --prod     # production deployment
 ```
 
 ## Verify
-- `GET https://<your-app>.vercel.app/health` → `{ "status": "ok", ... }`
+- Live deployment: **https://media-library-api.vercel.app**
+- `GET https://media-library-api.vercel.app/health` → `{ "status": "ok", ... }`
 - Run the Postman collection (see `/postman`) against the production environment;
   all assertions should pass.
 
