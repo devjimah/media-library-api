@@ -22,11 +22,17 @@ export const validateEnv = (env: NodeJS.ProcessEnv): string[] => {
         }
     }
 
+    // A Mongo connection string may be supplied under any of these names.
+    // DATABASE_URL is the generic name from the lab brief; MONGODB_URI /
+    // MONGODB_ATLAS_URI are the app's existing (Atlas-preferred) convention.
     const hasMongo =
         (env.MONGODB_URI && env.MONGODB_URI.trim() !== '') ||
-        (env.MONGODB_ATLAS_URI && env.MONGODB_ATLAS_URI.trim() !== '');
+        (env.MONGODB_ATLAS_URI && env.MONGODB_ATLAS_URI.trim() !== '') ||
+        (env.DATABASE_URL && env.DATABASE_URL.trim() !== '');
     if (!hasMongo) {
-        missing.push('Missing required environment variable: MONGODB_URI (or MONGODB_ATLAS_URI)');
+        missing.push(
+            'Missing required environment variable: DATABASE_URL (or MONGODB_URI / MONGODB_ATLAS_URI)'
+        );
     }
 
     return missing;

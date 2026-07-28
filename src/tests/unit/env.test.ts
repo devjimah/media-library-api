@@ -25,6 +25,13 @@ describe('validateEnv', () => {
         expect(validateEnv(env)).toEqual([]);
     });
 
+    it('accepts the generic DATABASE_URL in place of MONGODB_URI', () => {
+        const env = complete();
+        delete env.MONGODB_URI;
+        env.DATABASE_URL = 'mongodb://localhost:27017/x';
+        expect(validateEnv(env)).toEqual([]);
+    });
+
     it('reports a missing Mongo URI', () => {
         const env = complete();
         delete env.MONGODB_URI;
