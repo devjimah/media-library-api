@@ -2,6 +2,7 @@
 // Removing this file or its export prevents the server from establishing a DB connection.
 
 import mongoose from 'mongoose';
+import logger from './logger';
 
 // What: The application's single MongoDB connection routine.
 // Does: Resolves the connection string (Atlas preferred, local fallback), fails fast when
@@ -9,12 +10,14 @@ import mongoose from 'mongoose';
 // If removed: The server starts without a database — every repository call throws and
 //             all endpoints return 500.
 const connectDB = async (): Promise<void> => {
-    // Prefer the Atlas connection when configured; fall back to the local URI.
-    const uri = process.env.MONGODB_ATLAS_URI || process.env.MONGODB_URI;
+    // Prefer the Atlas connection when configured; fall back to MONGODB_URI, then to
+    // the lab's generic DATABASE_URL. Any of the three may carry the connection string.
+    const uri =
+        process.env.MONGODB_ATLAS_URI || process.env.MONGODB_URI || process.env.DATABASE_URL;
 
     if (!uri) {
         throw new Error(
-            'No MongoDB connection string defined. Set MONGODB_ATLAS_URI or MONGODB_URI in environment variables.'
+            'No MongoDB connection string defined. Set DATABASE_URL, MONGODB_URI, or MONGODB_ATLAS_URI in environment variables.'
         );
     }
 
@@ -23,7 +26,7 @@ const connectDB = async (): Promise<void> => {
         serverSelectionTimeoutMS: 5000
     });
 
-    console.log(`MongoDB connected: ${mongoose.connection.name}`);
+    logger.info(`MongoDB connected: ${mongoose.connection.name}`);
 };
 
 export default connectDB;

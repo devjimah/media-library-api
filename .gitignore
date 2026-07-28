@@ -1,5 +1,14 @@
 node_modules/
 dist/
+coverage/
+
+# Compiled output that can land next to the Vercel TS entry
+api/*.js
+
+# Environment files — never commit real secrets. Only the example is tracked.
 .env
+.env.*
+!.env.example
+
 uploads/*
 !uploads/.gitkeep

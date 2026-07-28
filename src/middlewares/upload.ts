@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { Request } from 'express';
 import { AppError } from '../utils/AppError';
+import logger from '../config/logger';
 
 /**
  * Accepted MIME types and the file extensions each may carry.
@@ -26,9 +27,20 @@ const MAX_FILE_SIZE = (Number(process.env.MAX_FILE_SIZE_MB) || 5) * 1024 * 1024;
 /** Directory where uploaded files are persisted */
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
 
-// Ensure the upload directory exists at startup — Multer's destination callback
-// errors with ENOENT if the directory is missing (e.g. custom UPLOAD_DIR values).
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Ensure the upload directory exists — Multer's destination callback errors with
+// ENOENT if the directory is missing. This is best-effort and MUST NOT crash the
+// process at module load: on a read-only serverless filesystem (e.g. Vercel, where
+// only /tmp is writable) mkdir throws, and letting that escape would take down every
+// route — even ones that never touch uploads. On failure we log and continue; a real
+// upload will surface its own error later if the directory truly can't be used.
+try {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (err) {
+    logger.warn(
+        `Could not pre-create upload directory "${UPLOAD_DIR}": ${(err as Error).message}. ` +
+        'Set UPLOAD_DIR to a writable path (e.g. /tmp/uploads on serverless).'
+    );
+}
 
 // ---------------------------------------------------------------------------
 // Disk storage engine

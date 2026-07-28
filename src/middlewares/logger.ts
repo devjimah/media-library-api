@@ -3,6 +3,7 @@
 // Safe to remove in production if a proper logging library (Winston, Pino) is added.
 
 import { Request, Response, NextFunction } from 'express';
+import appLogger from '../config/logger';
 
 // What: Request-logging middleware applied to every incoming request.
 // Does: Records the start time, then logs method, URL, status code, and duration
@@ -19,7 +20,7 @@ const logger = (req: Request, res: Response, next: NextFunction): void => {
     // If removed: Nothing is ever logged — the middleware becomes a no-op pass-through.
     res.on('finish', () => {
         const duration = Date.now() - start;
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} — ${duration}ms`);
+        appLogger.info(`${req.method} ${req.originalUrl} ${res.statusCode} — ${duration}ms`);
     });
 
     next();

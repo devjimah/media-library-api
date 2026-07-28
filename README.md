@@ -131,7 +131,7 @@ with a clear message otherwise.
 ```bash
 npm run dev     # development — tsx watch mode with auto-restart
 npm run build   # compile TypeScript to dist/
-npm start       # run the compiled build (node dist/server.js)
+npm start       # run the compiled build (node dist/src/server.js)
 ```
 
 On success you'll see the endpoint summary and `MongoDB connected: <db name>`.
@@ -314,6 +314,23 @@ Edge cases worth exercising in Postman/Insomnia (all verified against this codeb
 
 - [REVIEW-FINDINGS.md](REVIEW-FINDINGS.md) — 2026-07-06 full lab review (3 bugs + 4 findings, all fixed and verified 2026-07-07)
 - [docs/reviews/2026-07-17-lab-review-report.md](docs/reviews/2026-07-17-lab-review-report.md) — 2026-07-17 follow-up bug sweep (1 security fix + minor findings)
+
+## Production Readiness (BEM-34)
+
+- **Tests:** `npm test` (unit + integration via Jest, Supertest, in-memory MongoDB).
+  Coverage: `npm run test:coverage`.
+- **Environment:** `dotenv-flow` loads `.env.<NODE_ENV>`; required variables are
+  validated at startup (`src/config/env.ts`) and the process exits on a missing var.
+  See `.env.example`.
+- **Logging:** structured logging via Winston (`src/config/logger.ts`) — pretty in
+  development, JSON in production, level from `LOG_LEVEL`.
+- **Health check:** `GET /health` → `{ status, uptime, timestamp }`.
+- **CI:** `.github/workflows/ci.yml` builds, tests, and uploads a coverage artifact on
+  every push/PR to `master`.
+- **Deployment:** see `DEPLOYMENT.md` (Vercel config in `vercel.json`, serverless entry
+  in `api/index.ts`, plus the ephemeral-filesystem limitation and its S3/Cloudinary fix).
+- **Postman:** import `postman/media-library-api.postman_collection.json` and the
+  Development / Production environments.
 
 ## License
 

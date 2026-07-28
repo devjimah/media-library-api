@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
 import removeUploadedFile from '../utils/removeUploadedFile';
+import logger from '../config/logger';
 
 type ValidationTarget = 'body' | 'query' | 'params';
 
@@ -31,6 +32,11 @@ const validate = (schema: ZodSchema, target: ValidationTarget = 'body') => {
                 field: issue.path.join('.') || 'unknown',
                 message: issue.message
             }));
+
+            // Validation failures are expected/operational — log at warn, not error.
+            logger.warn(
+                `Validation error on ${target}: ${details.map((d) => `${d.field} (${d.message})`).join('; ')}`
+            );
 
             res.status(400).json({
                 status: 'error',

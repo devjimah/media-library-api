@@ -19,6 +19,7 @@ import {
     CreateMediaBody,
     UpdateMediaBody
 } from '../types/media';
+import logger from '../config/logger';
 
 // ---------------------------------------------------------------------------
 // CREATE
@@ -46,6 +47,8 @@ export const createMediaRecord = async (
         mimeType: file.mimetype,
         fileSize: file.size
     };
+
+    logger.info(`File uploaded: ${data.originalName} (${data.fileSize} bytes)`);
 
     return createMedia(data);
 };
@@ -134,7 +137,7 @@ export const deleteMediaRecord = async (id: string): Promise<void> => {
         await fs.unlink(absolutePath);
     } catch (err) {
         // File may have been manually deleted; log and continue
-        console.warn(`Could not delete file at ${absolutePath}:`, (err as Error).message);
+        logger.warn(`Could not delete file at ${absolutePath}: ${(err as Error).message}`);
     }
 };
 
